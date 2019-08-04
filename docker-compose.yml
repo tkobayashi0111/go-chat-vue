@@ -1,0 +1,10 @@
+version: "3"
+services:
+  server:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile-dev
+    volumes:
+      - ./server:/go/src/app
+    ports:
+      - "8080:8080"
