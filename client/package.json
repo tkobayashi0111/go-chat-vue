@@ -12,11 +12,15 @@
     "generate": "nuxt generate"
   },
   "dependencies": {
+    "@types/socket.io-client": "^1.4.32",
     "nuxt": "^2.0.0",
-    "ts-node": "^8.3.0"
+    "socket.io-client": "^2.2.0",
+    "ts-node": "^8.3.0",
+    "vue-property-decorator": "^8.2.1"
   },
   "devDependencies": {
     "@nuxt/typescript": "^2.8.1",
+    "@nuxtjs/dotenv": "^1.4.0",
     "@nuxtjs/eslint-config": "^1.0.1",
     "@nuxtjs/eslint-module": "^0.2.1",
     "@nuxtjs/vuetify": "^1.0.0",
