@@ -1,7 +1,5 @@
 FROM golang:1.12.7-alpine
 
-ENV HOSTNAME localhost
-
 WORKDIR /go/src/app
 
 ENV GO111MODULE=on

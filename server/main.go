@@ -3,15 +3,11 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	socketio "github.com/googollee/go-socket.io"
-	"github.com/rs/cors"
 )
 
 func main() {
-	mux := http.NewServeMux()
-
 	server, err := socketio.NewServer(nil)
 	if err != nil {
 		log.Fatal(err)
@@ -33,16 +29,8 @@ func main() {
 		log.Println("error:", err)
 	})
 
-	mux.Handle("/socket.io/", server)
-
-	hostname := os.Getenv("HOSTNAME")
-	corsOptions := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://" + hostname + ":8081"},
-		AllowCredentials: true,
-		Debug:            false,
-	})
-	handler := corsOptions.Handler(mux)
+	http.Handle("/socket.io/", server)
 
 	log.Println("Serving at localhost:8080...")
-	log.Fatal(http.ListenAndServe(":8080", handler))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
