@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/rs/cors"
@@ -34,8 +35,9 @@ func main() {
 
 	mux.Handle("/socket.io/", server)
 
+	hostname := os.Getenv("HOSTNAME")
 	corsOptions := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:8081"},
+		AllowedOrigins:   []string{"http://" + hostname + ":8081"},
 		AllowCredentials: true,
 		Debug:            false,
 	})

@@ -1,0 +1,12 @@
+FROM node:10.16.1-alpine
+
+# ENV SERVER_URL http://35.221.119.83:8080
+
+ADD ./client /var/app
+ADD ./docker/client/.env /var/app/.env
+WORKDIR /var/app
+
+EXPOSE 8081
+
+RUN npm run build
+CMD ["npm", "run", "start"]

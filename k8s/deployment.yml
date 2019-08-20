@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-chat
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: go-chat
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: go-chat
+        tier: backend
+    spec:
+      containers:
+        - name: server
+          image: gcr.io/gke-go-chat/server
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+              name: http
+          imagePullPolicy: Always
+        - name: client
+          image: gcr.io/gke-go-chat/client
+          ports:
+            - containerPort: 8081
+              protocol: TCP
+              name: http
+          imagePullPolicy: Always
+          readinessProbe:
+            httpGet:
+              # Path to probe; should be cheap, but representative of typical behavior
+              path: /
+              port: 8081
+            initialDelaySeconds: 30
+            timeoutSeconds: 1

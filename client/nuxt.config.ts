@@ -48,6 +48,14 @@ const config: NuxtConfiguration = {
    ** Nuxt.js modules
    */
   modules: ['@nuxtjs/dotenv'],
+  /**
+   ** Dotenv configuration
+   ** Doc: https://github.com/nuxt-community/dotenv-module
+   */
+  dotenv: {
+    only: ['SERVER_URL'],
+    systemvars: true
+  },
   /*
    ** vuetify module configuration
    ** https://github.com/nuxt-community/vuetify-module
