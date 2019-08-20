@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: go-chat
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       name: go-chat
@@ -16,6 +16,20 @@ spec:
         tier: backend
     spec:
       containers:
+        - name: proxy
+          image: gcr.io/gke-go-chat/proxy
+          ports:
+            - containerPort: 80
+              protocol: TCP
+              name: http
+          imagePullPolicy: Always
+          readinessProbe:
+            httpGet:
+              # Path to probe; should be cheap, but representative of typical behavior
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
         - name: server
           image: gcr.io/gke-go-chat/server
           ports:
@@ -30,10 +44,3 @@ spec:
               protocol: TCP
               name: http
           imagePullPolicy: Always
-          readinessProbe:
-            httpGet:
-              # Path to probe; should be cheap, but representative of typical behavior
-              path: /
-              port: 8081
-            initialDelaySeconds: 30
-            timeoutSeconds: 1
