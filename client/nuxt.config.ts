@@ -1,5 +1,4 @@
 import NuxtConfiguration from '@nuxt/config'
-import colors from 'vuetify/es5/util/colors'
 
 const config: NuxtConfiguration = {
   mode: 'spa',
@@ -47,7 +46,17 @@ const config: NuxtConfiguration = {
   /*
    ** Nuxt.js modules
    */
-  modules: ['@nuxtjs/dotenv'],
+  modules: ['@nuxtjs/proxy'],
+  proxy: {
+    '/chat': {
+      target: 'http://server:8080',
+      pathRewrite: { '^/chat': '' }
+    },
+    '/socket.io': {
+      target: 'http://server:8080',
+      ws: true
+    }
+  },
   /*
    ** vuetify module configuration
    ** https://github.com/nuxt-community/vuetify-module
@@ -57,15 +66,6 @@ const config: NuxtConfiguration = {
     theme: {
       dark: false
     }
-  },
-  /*
-   ** Build configuration
-   */
-  build: {
-    /*
-     ** You can extend webpack config here
-     */
-    extend(config, ctx) {}
   }
 }
 

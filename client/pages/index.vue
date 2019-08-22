@@ -25,10 +25,8 @@ export default class Index extends Vue {
   private messages: string[] = []
 
   mounted() {
-    if (typeof process.env.SERVER_URL === 'string') {
-      this.socket = io(process.env.SERVER_URL)
-      this.socket.on('chat', this.onReceiveChat)
-    }
+    this.socket = io('/chat')
+    this.socket.on('chat', this.onReceiveChat)
   }
 
   onClickSend() {
