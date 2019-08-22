@@ -1,0 +1,15 @@
+FROM golang:1.12.7-alpine AS build-env
+
+ADD ./server /go/src/app
+WORKDIR /go/src/app
+
+ENV GO111MODULE=on
+RUN apk add --no-cache \
+    alpine-sdk \
+    git
+RUN go build -o main main.go
+
+FROM alpine:latest
+COPY --from=build-env /go/src/app/main /usr/local/bin/main
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/main"]

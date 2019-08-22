@@ -1,0 +1,7 @@
+FROM node:10.16.1-alpine
+
+WORKDIR /var/app
+
+EXPOSE 8081
+
+CMD ["npm", "run", "dev"]

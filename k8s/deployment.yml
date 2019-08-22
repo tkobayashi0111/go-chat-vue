@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-chat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: go-chat
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        name: go-chat
+    spec:
+      containers:
+        - name: proxy
+          image: gcr.io/gke-go-chat/proxy
+          ports:
+            - containerPort: 80
+              protocol: TCP
+              name: http
+          imagePullPolicy: Always
+        - name: server
+          image: gcr.io/gke-go-chat/server
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+              name: http
+          imagePullPolicy: Always
+        - name: client
+          image: gcr.io/gke-go-chat/client
+          ports:
+            - containerPort: 8081
+              protocol: TCP
+              name: http
+          imagePullPolicy: Always
