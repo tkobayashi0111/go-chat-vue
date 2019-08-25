@@ -1,7 +1,10 @@
 <template>
   <v-row>
     <v-col lg="6" offset-lg="3" md="12">
-      <div :style="{ overflowY: 'auto', height: getContentAreaHeight() }">
+      <div
+        ref="contentArea"
+        :style="{ overflowY: 'auto', height: getContentAreaHeight() }"
+      >
         <template v-for="(message, i) in messages">
           <conversation :key="`message-${i}`" :message="message" />
         </template>
@@ -41,14 +44,26 @@ export default class Index extends Vue {
 
   private textarea: null | HTMLElement = null
 
+  private contentArea: null | HTMLElement = null
+
   mounted() {
+    this.contentArea = this.$refs.contentArea as HTMLElement
+    this.textarea = (this.$refs.textarea as Vue).$el as HTMLElement
     this.socket = io('/chat')
     this.socket.on('chat', this.onReceiveChat)
-    this.textarea = (this.$refs.textarea as Vue).$el as HTMLElement
   }
 
   onReceiveChat(message) {
+    const shouldScroll = this.getScrollBottom() === 0
     this.messages = [...this.messages, message]
+    if (shouldScroll) {
+      // 最下部にスクロールする
+      this.$nextTick().then(() => {
+        if (this.contentArea) {
+          this.contentArea.scrollTop = this.contentArea.scrollHeight
+        }
+      })
+    }
   }
 
   onSubmit() {
@@ -76,6 +91,18 @@ export default class Index extends Vue {
     const margin =
       parseInt(style.marginTop || '0') + parseInt(style.marginBottom || '0')
     return el.offsetHeight + margin
+  }
+
+  private getScrollBottom() {
+    if (this.contentArea) {
+      return (
+        this.contentArea.scrollHeight -
+        this.contentArea.clientHeight -
+        this.contentArea.scrollTop
+      )
+    } else {
+      return 0
+    }
   }
 }
 </script>
