@@ -1,0 +1,51 @@
+version: 2
+jobs:
+  build:
+    branches:
+      only:
+        - master
+    docker:
+      - image: google/cloud-sdk
+    steps:
+      - checkout
+      - run:
+          name: Google Cloud SDKの認証
+          command: |
+            echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
+            gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+            gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+            gcloud config list
+            gcloud container clusters get-credentials ${CLUSTER_NAME} --zone ${GOOGLE_COMPUTE_ZONE}
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Docker auth
+          command: |
+            gcloud auth configure-docker
+      - run:
+          name: Set Image Name
+          command: |
+            echo "export IMAGE_PROXY=gcr.io/${GOOGLE_PROJECT_ID}/proxy" >> $BASH_ENV
+            echo "export IMAGE_SERVER=gcr.io/${GOOGLE_PROJECT_ID}/server" >> $BASH_ENV
+            echo "export IMAGE_CLIENT=gcr.io/${GOOGLE_PROJECT_ID}/client" >> $BASH_ENV
+      - run:
+          name: Docker Image build
+          command: |
+            docker build -t ${IMAGE_PROXY}:${CIRCLE_SHA1} -t ${IMAGE_PROXY}:latest --cache-from ${IMAGE_PROXY}:latest -f docker/proxy/Dockerfile-prd .
+            docker build -t ${IMAGE_SERVER}:${CIRCLE_SHA1} -t ${IMAGE_SERVER}:latest --cache-from ${IMAGE_SERVER}:latest -f docker/server/Dockerfile-prd .
+            docker build -t ${IMAGE_CLIENT}:${CIRCLE_SHA1} -t ${IMAGE_CLIENT}:latest --cache-from ${IMAGE_CLIENT}:latest -f docker/client/Dockerfile-prd .
+      - run:
+          name: Docker Image push
+          command: |
+            docker push ${IMAGE_PROXY}:${CIRCLE_SHA1}
+            docker push ${IMAGE_PROXY}:latest
+            docker push ${IMAGE_SERVER}:${CIRCLE_SHA1}
+            docker push ${IMAGE_SERVER}:latest
+            docker push ${IMAGE_CLIENT}:${CIRCLE_SHA1}
+            docker push ${IMAGE_CLIENT}:latest
+      - run:
+          name: Update pods
+          command: |
+            REPLICAS=$(kubectl get deployment/go-chat -o jsonpath='{.spec.replicas}')
+            kubectl scale --replicas=0 deployment go-chat
+            kubectl scale --replicas=${REPLICAS} deployment go-chat
