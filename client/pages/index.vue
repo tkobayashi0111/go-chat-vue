@@ -1,10 +1,7 @@
 <template>
   <v-row>
     <v-col lg="6" offset-lg="3" md="12">
-      <div
-        ref="contentArea"
-        :style="{ overflowY: 'auto', height: getContentAreaHeight() }"
-      >
+      <div ref="contentArea" :style="contentAreaStyle">
         <template v-for="(message, i) in messages">
           <conversation :key="`message-${i}`" :message="message" />
         </template>
@@ -46,22 +43,28 @@ export default class Index extends Vue {
 
   private contentArea: null | HTMLElement = null
 
+  private contentAreaStyle: Partial<CSSStyleDeclaration> = {
+    overflowY: 'auto'
+  }
+
   mounted() {
     this.contentArea = this.$refs.contentArea as HTMLElement
     this.textarea = (this.$refs.textarea as Vue).$el as HTMLElement
     this.socket = io('/chat')
     this.socket.on('chat', this.onReceiveChat)
+
+    window.addEventListener('resize', () => {
+      this.updateContentAreaHeight()
+    })
+    this.updateContentAreaHeight()
   }
 
   onReceiveChat(message) {
-    const shouldScroll = this.getScrollBottom() === 0
+    const shouldScroll = this.shouldScroll()
     this.messages = [...this.messages, message]
     if (shouldScroll) {
-      // 最下部にスクロールする
       this.$nextTick().then(() => {
-        if (this.contentArea) {
-          this.contentArea.scrollTop = this.contentArea.scrollHeight
-        }
+        this.scrollBottom()
       })
     }
   }
@@ -76,11 +79,28 @@ export default class Index extends Vue {
   }
 
   @Watch('message')
+  updateContentAreaHeight() {
+    const shouldScroll = this.shouldScroll()
+    const height = this.getContentAreaHeight()
+    this.contentAreaStyle = {
+      ...this.contentAreaStyle,
+      ...{
+        height
+      }
+    }
+    if (shouldScroll) {
+      this.$nextTick().then(() => {
+        this.scrollBottom()
+      })
+    }
+  }
+
   private getContentAreaHeight() {
     if (this.textarea) {
       const textareaHeight = this.getElementHeight(this.textarea)
       const containerPadding = 48
-      return `calc(100vh - ${textareaHeight}px - ${containerPadding}px)`
+      const windowHeight = window.innerHeight
+      return `${windowHeight - textareaHeight - containerPadding}px`
     } else {
       return '0'
     }
@@ -93,6 +113,10 @@ export default class Index extends Vue {
     return el.offsetHeight + margin
   }
 
+  private shouldScroll() {
+    return this.getScrollBottom() === 0
+  }
+
   private getScrollBottom() {
     if (this.contentArea) {
       return (
@@ -102,6 +126,12 @@ export default class Index extends Vue {
       )
     } else {
       return 0
+    }
+  }
+
+  private scrollBottom() {
+    if (this.contentArea) {
+      this.contentArea.scrollTop = this.contentArea.scrollHeight
     }
   }
 }
