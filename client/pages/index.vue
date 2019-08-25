@@ -1,22 +1,36 @@
 <template>
-  <v-layout column justify-center align-center>
-    <v-flex xs12 sm8 md6>
-      <v-text-field v-model="message" />
-      <v-btn color="primary" @click="onClickSend">送信</v-btn>
-      <v-list v-show="messages.length > 0">
-        <v-list-item v-for="(message, i) in messages" :key="`message-${i}`">
-          {{ message }}
-        </v-list-item>
-      </v-list>
-    </v-flex>
-  </v-layout>
+  <v-row>
+    <v-col lg="6" offset-lg="3" md="12">
+      <div>
+        <template v-for="(message, i) in messages">
+          <conversation :key="`message-${i}`" :message="message" />
+        </template>
+      </div>
+      <v-textarea
+        v-model="message"
+        append-icon="mdi-send"
+        auto-grow
+        autofocus
+        rows="1"
+        @keydown.meta.enter="onSubmit"
+        @keydown.ctrl.enter="onSubmit"
+        @click:append="onSubmit"
+      />
+    </v-col>
+  </v-row>
 </template>
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
 import io from 'socket.io-client'
 
-@Component
+import Conversation from '@/components/Conversation.vue'
+
+@Component({
+  components: {
+    Conversation
+  }
+})
 export default class Index extends Vue {
   private socket!: SocketIOClient.Socket
 
@@ -29,15 +43,17 @@ export default class Index extends Vue {
     this.socket.on('chat', this.onReceiveChat)
   }
 
-  onClickSend() {
-    if (this.socket && this.socket.connected) {
-      this.socket.emit('chat', this.message)
-      this.message = ''
-    }
-  }
-
   onReceiveChat(message) {
     this.messages = [...this.messages, message]
+  }
+
+  onSubmit() {
+    if (this.message.length < 1) {
+      return
+    }
+
+    this.socket.emit('chat', this.message)
+    this.message = ''
   }
 }
 </script>
