@@ -2,8 +2,13 @@
   <v-row>
     <v-col lg="6" offset-lg="3" md="12">
       <div ref="contentArea" :style="contentAreaStyle">
-        <template v-for="(message, i) in messages">
-          <conversation :key="`message-${i}`" :message="message" />
+        <template v-for="(chatMessage, i) in chatMessages">
+          <conversation
+            :key="`message-${i}`"
+            :name="chatMessage.name"
+            :message="chatMessage.message"
+            :me="chatMessage.id === socket.id"
+          />
         </template>
       </div>
       <v-textarea
@@ -27,17 +32,25 @@ import io from 'socket.io-client'
 
 import Conversation from '@/components/Conversation.vue'
 
+export interface ChatMessage {
+  id: string
+  name: string
+  message: string
+}
+
 @Component({
   components: {
     Conversation
   }
 })
 export default class Index extends Vue {
+  private name!: string
+
   private socket!: SocketIOClient.Socket
 
   private message: string = ''
 
-  private messages: string[] = []
+  private chatMessages: ChatMessage[] = []
 
   private textarea: null | HTMLElement = null
 
@@ -48,9 +61,19 @@ export default class Index extends Vue {
   }
 
   mounted() {
+    if (!this.$route.params.name) {
+      this.$router.replace('/enter')
+      return
+    }
+
+    this.name = this.$route.params.name
     this.contentArea = this.$refs.contentArea as HTMLElement
     this.textarea = (this.$refs.textarea as Vue).$el as HTMLElement
-    this.socket = io('/chat')
+    this.socket = io('/chat', {
+      query: {
+        name: this.name
+      }
+    })
     this.socket.on('chat', this.onReceiveChat)
 
     window.addEventListener('resize', () => {
@@ -59,9 +82,9 @@ export default class Index extends Vue {
     this.updateContentAreaHeight()
   }
 
-  onReceiveChat(message) {
+  onReceiveChat(chatMessage: ChatMessage) {
     const shouldScroll = this.shouldScroll()
-    this.messages = [...this.messages, message]
+    this.chatMessages = [...this.chatMessages, chatMessage]
     if (shouldScroll) {
       this.$nextTick().then(() => {
         this.scrollBottom()
