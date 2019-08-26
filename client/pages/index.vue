@@ -1,12 +1,14 @@
 <template>
   <v-row>
     <v-col lg="6" offset-lg="3" md="12">
-      <div
-        ref="contentArea"
-        :style="{ overflowY: 'auto', height: getContentAreaHeight() }"
-      >
-        <template v-for="(message, i) in messages">
-          <conversation :key="`message-${i}`" :message="message" />
+      <div ref="contentArea" :style="contentAreaStyle">
+        <template v-for="(chatMessage, i) in chatMessages">
+          <conversation
+            :key="`message-${i}`"
+            :name="chatMessage.name"
+            :message="chatMessage.message"
+            :me="chatMessage.id === socket.id"
+          />
         </template>
       </div>
       <v-textarea
@@ -30,38 +32,62 @@ import io from 'socket.io-client'
 
 import Conversation from '@/components/Conversation.vue'
 
+export interface ChatMessage {
+  id: string
+  name: string
+  message: string
+}
+
 @Component({
   components: {
     Conversation
   }
 })
 export default class Index extends Vue {
+  private name!: string
+
   private socket!: SocketIOClient.Socket
 
   private message: string = ''
 
-  private messages: string[] = []
+  private chatMessages: ChatMessage[] = []
 
   private textarea: null | HTMLElement = null
 
   private contentArea: null | HTMLElement = null
 
-  mounted() {
-    this.contentArea = this.$refs.contentArea as HTMLElement
-    this.textarea = (this.$refs.textarea as Vue).$el as HTMLElement
-    this.socket = io('/chat')
-    this.socket.on('chat', this.onReceiveChat)
+  private contentAreaStyle: Partial<CSSStyleDeclaration> = {
+    overflowY: 'auto'
   }
 
-  onReceiveChat(message) {
-    const shouldScroll = this.getScrollBottom() === 0
-    this.messages = [...this.messages, message]
+  mounted() {
+    if (!this.$route.params.name) {
+      this.$router.replace('/enter')
+      return
+    }
+
+    this.name = this.$route.params.name
+    this.contentArea = this.$refs.contentArea as HTMLElement
+    this.textarea = (this.$refs.textarea as Vue).$el as HTMLElement
+    this.socket = io('/chat', {
+      query: {
+        name: this.name
+      }
+    })
+    this.socket.on('chat', this.onReceiveChat)
+
+    window.addEventListener('resize', () => {
+      this.updateContentAreaHeight()
+    })
+    this.updateContentAreaHeight()
+  }
+
+  onReceiveChat(chatMessage: ChatMessage) {
+    const shouldScroll = this.shouldScroll()
+    this.chatMessages = [...this.chatMessages, chatMessage]
     if (shouldScroll) {
-      // 最下部にスクロールする
       this.$nextTick().then(() => {
-        if (this.contentArea) {
-          this.contentArea.scrollTop = this.contentArea.scrollHeight
-        }
+        this.scrollBottom()
       })
     }
   }
@@ -76,11 +102,28 @@ export default class Index extends Vue {
   }
 
   @Watch('message')
+  updateContentAreaHeight() {
+    const shouldScroll = this.shouldScroll()
+    const height = this.getContentAreaHeight()
+    this.contentAreaStyle = {
+      ...this.contentAreaStyle,
+      ...{
+        height
+      }
+    }
+    if (shouldScroll) {
+      this.$nextTick().then(() => {
+        this.scrollBottom()
+      })
+    }
+  }
+
   private getContentAreaHeight() {
     if (this.textarea) {
       const textareaHeight = this.getElementHeight(this.textarea)
       const containerPadding = 48
-      return `calc(100vh - ${textareaHeight}px - ${containerPadding}px)`
+      const windowHeight = window.innerHeight
+      return `${windowHeight - textareaHeight - containerPadding}px`
     } else {
       return '0'
     }
@@ -93,6 +136,10 @@ export default class Index extends Vue {
     return el.offsetHeight + margin
   }
 
+  private shouldScroll() {
+    return this.getScrollBottom() === 0
+  }
+
   private getScrollBottom() {
     if (this.contentArea) {
       return (
@@ -102,6 +149,12 @@ export default class Index extends Vue {
       )
     } else {
       return 0
+    }
+  }
+
+  private scrollBottom() {
+    if (this.contentArea) {
+      this.contentArea.scrollTop = this.contentArea.scrollHeight
     }
   }
 }
